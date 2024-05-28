@@ -81,26 +81,29 @@ class _MatchQuestionState extends State<MatchQuestion> {
             color: isCorrect ? Colors.green : Colors.red,
             size: 100,
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                if (isCorrect) {
-                  setState(() {
-                    showConfetti = false;
-                  });
-                }
-              },
-              child: Text('OK'),
-            ),
-          ],
         );
       },
     );
+
+    // Close the dialog after 1 second (adjust duration as needed)
+    Future.delayed(Duration(milliseconds: 800), () {
+      Navigator.of(context).pop();
+      if (isCorrect) {
+        setState(() {
+          showConfetti = false;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Shuffle options for the "words" column
+    List<String> shuffledWords = (widget.question.options ?? [])
+        .map((option) => option.values.first)
+        .toList()
+      ..shuffle();
+
     return SingleChildScrollView(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -116,7 +119,7 @@ class _MatchQuestionState extends State<MatchQuestion> {
                 itemBuilder: (context, index) {
                   var option = widget.question.options![index];
                   String number = option.keys.first;
-                  String word = option.values.first;
+                  String word = shuffledWords[index]; // Use shuffled word here
 
                   return Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,

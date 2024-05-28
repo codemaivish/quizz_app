@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:quizz_app/model/quiz_question.dart';
 import 'package:collection/collection.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart'; // for rootBundle
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class WordOrderQuestion extends StatefulWidget {
   final Question question;
@@ -19,6 +23,52 @@ class _WordOrderQuestionState extends State<WordOrderQuestion> {
   List<String> selectedWords = [];
   List<String> tappedWords = [];
   bool showAnswer = true; // Initialize to true to show the answer by default
+  final AudioPlayer audioPlayer = AudioPlayer();
+
+  @override
+  void dispose() {
+    audioPlayer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _playAudio() async {
+    try {
+      // Load the audio file from assets
+      final ByteData data =
+          await rootBundle.load('assets/audio/question_audio.mp3');
+      // Get the temporary directory
+      final Directory tempDir = await getTemporaryDirectory();
+      // Create a temporary file
+      final File tempFile = File('${tempDir.path}/question_audio.mp3');
+      // Write the data to the temporary file
+      await tempFile.writeAsBytes(data.buffer.asUint8List(), flush: true);
+      // Play the audio file from the temporary file
+      await audioPlayer.play(DeviceFileSource(tempFile.path));
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  void _checkAnswer() {
+    String answer = tappedWords.join(' ');
+    if (answer == widget.question.answer) {
+      widget.onNextQuestion();
+    } else {
+      _showAlertDialog('Wrong Answer', 'Please try again.');
+    }
+  }
+
+  void _showAlertDialog(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +88,25 @@ class _WordOrderQuestionState extends State<WordOrderQuestion> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Display the main question text
-          Text(
-            widget.question.question!,
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            textAlign: TextAlign.center,
+          Image.asset('assets/download.jpeg',
+              height: 150), // Add your image here
+          SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Display the main question text
+              Expanded(
+                child: Text(
+                  widget.question.question!,
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.volume_up),
+                onPressed: _playAudio,
+              ),
+            ],
           ),
           SizedBox(height: 20),
           Wrap(
@@ -93,6 +157,11 @@ class _WordOrderQuestionState extends State<WordOrderQuestion> {
                 ),
               );
             }).toList(),
+          ),
+          SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: _checkAnswer,
+            child: Text('Next Question'),
           ),
         ],
       ),
